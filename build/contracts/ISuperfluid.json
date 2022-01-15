@@ -11022,7 +11022,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.3",
-  "updatedAt": "2022-01-14T16:50:07.880Z",
+  "updatedAt": "2022-01-15T12:15:29.450Z",
   "devdoc": {
     "author": "Superfluid",
     "details": "Superfluid host interface. It is the central contract of the system where super agreement, super app and super token features are connected together. The superfluid host contract is also the entry point for the protocol users, where batch call and meta transaction are provided for UX improvements.",

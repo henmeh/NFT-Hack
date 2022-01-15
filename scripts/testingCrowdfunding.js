@@ -2,7 +2,7 @@ require('dotenv').config()
 
 const CrowdfundingNFT = require("../build/contracts/CrowdfundingNFT.json");
 const CrowdfundingNFTABI = CrowdfundingNFT.abi;
-const CrowdfundingNFTADDRESS = "0xdBf3076Be8c8c52B8A8b0daa62f62150D53f54c6";
+const CrowdfundingNFTADDRESS = "0x867D22ac684f6EC3E259D83230bAD3c09959BB90";
 
 const ISuperToken = require("../build/contracts/ISuperToken.json");
 const ISuperTokenABI = ISuperToken.abi;
@@ -46,11 +46,11 @@ const transferNFT = async function () {
 
 const beforeDeleting = async function () {
   const stopFlow = await contractCrowdfunding.methods
-    .stopFlow("1")
+    .stopFlow("2")
     .send(sendingOptions);
   console.log(stopFlow);
   const withdrawFunds = await contractCrowdfunding.methods
-    .withdraw("1")
+    .withdraw("2")
     .send(sendingOptions);
   console.log(withdrawFunds);
 };
@@ -81,5 +81,5 @@ const checkUpdate = async function () {
 //getNFTInfos();
 //interact();
 //transferNFT();
-//beforeDeleting();
+beforeDeleting();
 //checkUpdate();
