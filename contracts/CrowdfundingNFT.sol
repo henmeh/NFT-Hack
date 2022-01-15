@@ -40,8 +40,11 @@ contract CrowdfundingNFT is ERC721 {
         uint256 securityAmount;
         address minter;
         bool isStopped;
-        uint256 originalStreamAmount;
+        address[] investors;
     }
+
+    // storing which address funded which nft with how many tokens
+    mapping (uint256 => mapping(address => uint256)) public nftAccounting;
 
     // Storing all NFTs
     mapping (uint256 => nftData) public allNFTs;
@@ -91,6 +94,8 @@ contract CrowdfundingNFT is ERC721 {
     function mint(uint8 _isSupertoken, uint256 _streamAmount, uint256 _streamRate, address _streamToken, address _erc20TokenAddress, address _projectOwner) public returns(bool) {      
         uint256 _startingBlockTime = block.timestamp;
         uint256 _securityAmount = _streamRate * (60 * 60);
+        address[] memory _investor = new address[](1);
+        _investor[0] = msg.sender;
 
         //decide if the token to be streamed is a supertoken or not
         if(_isSupertoken == 1) {
@@ -109,7 +114,9 @@ contract CrowdfundingNFT is ERC721 {
         }
 
         //storing nft data on chain
-        allNFTs[tokenId] = nftData(_startingBlockTime, 0, _projectOwner, _streamAmount, _streamRate, _streamToken, _securityAmount, msg.sender, false, _streamAmount);
+        allNFTs[tokenId] = nftData(_startingBlockTime, 0, _projectOwner, _streamAmount, _streamRate, _streamToken, _securityAmount, msg.sender, false, _investor);
+        //add investor to the accounting
+        nftAccounting[tokenId][msg.sender] = nftAccounting[tokenId][msg.sender] + (_streamAmount + _securityAmount);
         //actual minting of the nft directly in the wallet of the project
         _mint(_projectOwner, tokenId);
         //start the flow
@@ -155,6 +162,29 @@ contract CrowdfundingNFT is ERC721 {
         return true;
     }
 
+    function fundNFT(uint8 _isSupertoken, uint256 _tokenId, address _streamToken, uint256 _fundAmount, address _erc20TokenAddress) public {
+        require(allNFTs[_tokenId].streamToken == _streamToken, "You can only fund the token that is already streamed");
+        if(_isSupertoken == 1) {
+            //get the supertoken out of the senders pocket and store the balance in the mapping
+            require(ISuperToken(_streamToken).balanceOf(msg.sender) > _fundAmount, "Not enough funds in your wallet");
+            ISuperToken(_streamToken).transferFrom(msg.sender, address(this), _fundAmount); 
+        } 
+        if(_isSupertoken == 2) {
+            //get the erc20 token out of the senders pocket, store and start upgrading
+            require(IERC20(_streamToken).balanceOf(msg.sender) > _fundAmount, "Not enough funds in your wallet to pay for stream and security");
+            IERC20(_erc20TokenAddress).transferFrom(msg.sender, address(this), _fundAmount);
+            //approve wrapper to spend ERC20_token
+            IERC20(_erc20TokenAddress).approve(_streamToken, _fundAmount);
+            //upgrading the ERC20_token 
+            ISuperToken(_streamToken).upgrade(_fundAmount);        
+        }
+        //adding the investor to the nft
+        allNFTs[_tokenId].investors.push(msg.sender);
+        //adding the fundingamount to the nft
+        allNFTs[_tokenId].streamAmount = allNFTs[_tokenId].streamAmount + _fundAmount;
+        //add investor to the accounting
+        nftAccounting[_tokenId][msg.sender] = nftAccounting[_tokenId][msg.sender] + _fundAmount;
+    }
 
     //now I will insert a nice little hook in the _transfer, including the RedirectAll function I need
     function _beforeTokenTransfer(address from, address to, uint256 _tokenId) internal override {
